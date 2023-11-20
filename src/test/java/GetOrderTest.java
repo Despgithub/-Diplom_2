@@ -5,6 +5,7 @@ import model.CreateOrderRequest;
 import model.CreateUserRequest;
 import model.GetOrderResponse;
 import model.OrderErrorResponse;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -16,17 +17,12 @@ import static clients.UserApiClient.*;
 import static helpers.DataGenerator.getUser;
 import static helpers.OrderHelper.*;
 
-public class GetOrderTest {
-    CreateUserRequest data;
-    Response response;
+public class GetOrderTest extends BaseTest{
 
     @Test
     @DisplayName("Получение заказов авторизованного пользователя")
     @Description("Должен вернуться статус код '200', а в теле сообщения информация о заказах")
     public void authUserGetOrderTest() {
-        data = getUser();
-        response = createUserRequest(data);
-        String authToken = getAuthToken(response);
         List<String> orderList = getOrderList();
         createOrderRequest(authToken, new CreateOrderRequest(orderList));
         Response getOrderRequest = getUserOrdersListRequest(authToken);
@@ -34,7 +30,6 @@ public class GetOrderTest {
         Assert.assertNotNull(orderResponse.getOrders());
         Assert.assertNotNull(orderResponse.getTotalToday());
         Assert.assertNotNull(orderResponse.getTotal());
-        deleteUserRequest(authToken);
     }
 
     @Test
