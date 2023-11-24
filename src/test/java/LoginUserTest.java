@@ -7,8 +7,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static clients.UserApiClient.loginUserRequest;
-import static helpers.UserHelper.userDeserialization;
-import static helpers.UserHelper.userUnauthorizedErrorDeserialization;
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 public class LoginUserTest extends BaseTest {
 
@@ -17,7 +18,7 @@ public class LoginUserTest extends BaseTest {
     @Test
     public void LoginTest() {
         Response loginResponse = loginUserRequest(new LoginUserRequest(data.getEmail(), data.getPassword()));
-        userDeserialization(loginResponse);
+        loginResponse.then().statusCode(SC_OK).assertThat().body("success", equalTo(true)).log().all();
     }
 
     @DisplayName("Логин с неверным логином и паролем")
@@ -25,8 +26,8 @@ public class LoginUserTest extends BaseTest {
     @Test
     public void LoginWithWrongEmailAndPasswordTest() {
         Response loginResponse = loginUserRequest(new LoginUserRequest(faker.internet().emailAddress(), faker.internet().password()));
-        UserErrorResponse errorResponse = userUnauthorizedErrorDeserialization(loginResponse);
-        Assert.assertEquals("Неверный текст ошибки", errorResponse.getMessage(), "email or password are incorrect");
+        UserErrorResponse errorResponse = loginResponse.then().statusCode(SC_UNAUTHORIZED).assertThat().body("success", equalTo(false)).log().all().and().extract().as(UserErrorResponse.class);
+        Assert.assertEquals("Неверный текст ошибки", "email or password are incorrect", errorResponse.getMessage());
     }
 
     @DisplayName("Логин с неверным логином")
@@ -34,8 +35,8 @@ public class LoginUserTest extends BaseTest {
     @Test
     public void LoginWithWrongLoginTest() {
         Response loginResponse = loginUserRequest(new LoginUserRequest(faker.internet().emailAddress(), data.getPassword()));
-        UserErrorResponse errorResponse = userUnauthorizedErrorDeserialization(loginResponse);
-        Assert.assertEquals("Неверный текст ошибки", errorResponse.getMessage(), "email or password are incorrect");
+        UserErrorResponse errorResponse = loginResponse.then().statusCode(SC_UNAUTHORIZED).assertThat().body("success", equalTo(false)).log().all().and().extract().as(UserErrorResponse.class);
+        Assert.assertEquals("Неверный текст ошибки", "email or password are incorrect", errorResponse.getMessage());
     }
 
     @DisplayName("Логин с неверным паролем")
@@ -43,8 +44,8 @@ public class LoginUserTest extends BaseTest {
     @Test
     public void LoginWithWrongPasswordTest() {
         Response loginResponse = loginUserRequest(new LoginUserRequest(data.getEmail(), faker.internet().password()));
-        UserErrorResponse errorResponse = userUnauthorizedErrorDeserialization(loginResponse);
-        Assert.assertEquals("Неверный текст ошибки", errorResponse.getMessage(), "email or password are incorrect");
+        UserErrorResponse errorResponse = loginResponse.then().statusCode(SC_UNAUTHORIZED).assertThat().body("success", equalTo(false)).log().all().and().extract().as(UserErrorResponse.class);
+        Assert.assertEquals("Неверный текст ошибки", "email or password are incorrect", errorResponse.getMessage());
     }
 
 }

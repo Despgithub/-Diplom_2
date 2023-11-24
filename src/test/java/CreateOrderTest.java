@@ -10,8 +10,10 @@ import org.junit.Test;
 import java.util.List;
 
 import static clients.OrderApiClient.createOrderRequest;
-import static helpers.OrderHelper.*;
-import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
+import static helpers.OrderHelper.getErrorOrderList;
+import static helpers.OrderHelper.getOrderList;
+import static org.apache.http.HttpStatus.*;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 
 public class CreateOrderTest extends BaseTest {
@@ -22,7 +24,7 @@ public class CreateOrderTest extends BaseTest {
     public void authUserOrderWithIngredientsTest() {
         List<String> orderList = getOrderList();
         Response orderRequest = createOrderRequest(authToken, new CreateOrderRequest(orderList));
-        CreateOrderResponse orderResponse = orderDeserialization(orderRequest);
+        CreateOrderResponse orderResponse = orderRequest.then().statusCode(SC_OK).assertThat().body("success", equalTo(true)).log().all().and().extract().as(CreateOrderResponse.class);
         Assert.assertNotNull(orderResponse.getName());
         Assert.assertNotNull(orderResponse.getOrder());
     }
@@ -33,7 +35,7 @@ public class CreateOrderTest extends BaseTest {
     public void notAuthUserOrderWithIngredientsTest() {
         List<String> orderList = getOrderList();
         Response orderRequest = createOrderRequest("", new CreateOrderRequest(orderList));
-        CreateOrderResponse orderResponse = orderDeserialization(orderRequest);
+        CreateOrderResponse orderResponse = orderRequest.then().statusCode(SC_OK).assertThat().body("success", equalTo(true)).log().all().and().extract().as(CreateOrderResponse.class);
         Assert.assertNotNull(orderResponse.getName());
         Assert.assertNotNull(orderResponse.getOrder());
     }
@@ -43,8 +45,8 @@ public class CreateOrderTest extends BaseTest {
     @Description("Должен вернуться статус код '400', а в теле ошибка 'Ingredient ids must be provided'")
     public void authUserOrderWithoutIngredientsTest() {
         Response orderRequest = createOrderRequest(authToken, new CreateOrderRequest());
-        OrderErrorResponse errorResponse = orderBadRequestErrorDeserialization(orderRequest);
-        Assert.assertEquals("Неверный текст ошибки", errorResponse.getMessage(), "Ingredient ids must be provided");
+        OrderErrorResponse errorResponse = orderRequest.then().statusCode(SC_BAD_REQUEST).assertThat().body("success", equalTo(false)).log().all().and().extract().as(OrderErrorResponse.class);
+        Assert.assertEquals("Неверный текст ошибки", "Ingredient ids must be provided", errorResponse.getMessage());
     }
 
     @Test
@@ -52,8 +54,8 @@ public class CreateOrderTest extends BaseTest {
     @Description("Должен вернуться статус код '400', а в теле ошибка 'Ingredient ids must be provided'")
     public void notAuthUserOrderWithoutIngredientsTest() {
         Response orderRequest = createOrderRequest("", new CreateOrderRequest());
-        OrderErrorResponse errorResponse = orderBadRequestErrorDeserialization(orderRequest);
-        Assert.assertEquals("Неверный текст ошибки", errorResponse.getMessage(), "Ingredient ids must be provided");
+        OrderErrorResponse errorResponse = orderRequest.then().statusCode(SC_BAD_REQUEST).assertThat().body("success", equalTo(false)).log().all().and().extract().as(OrderErrorResponse.class);
+        Assert.assertEquals("Неверный текст ошибки", "Ingredient ids must be provided", errorResponse.getMessage());
     }
 
     @Test

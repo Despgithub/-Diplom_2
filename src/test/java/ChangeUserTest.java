@@ -8,8 +8,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static clients.UserApiClient.UpdateDataUserRequest;
-import static helpers.UserHelper.userDeserialization;
-import static helpers.UserHelper.userUnauthorizedErrorDeserialization;
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 public class ChangeUserTest extends BaseTest {
 
@@ -18,9 +19,9 @@ public class ChangeUserTest extends BaseTest {
     @Description("Должен вернуться статус код '200', а в теле сообщения обновленные данные пользователя")
     public void updateUserDataTest() {
         Response updateResponse = UpdateDataUserRequest(authToken, new UpdateUserRequest(faker.internet().emailAddress(), faker.name().firstName()));
-        UserResponse userResponse = userDeserialization(updateResponse);
+        UserResponse userResponse = updateResponse.then().statusCode(SC_OK).assertThat().body("success", equalTo(true)).log().all().and().extract().as(UserResponse.class);
         Assert.assertNotEquals("Email не изменился", data.getEmail(), userResponse.getUser().getEmail());
-        Assert.assertNotEquals("Имя не изменилось", userResponse.getUser().getName());
+        Assert.assertNotEquals("Имя не изменилось", data.getName(), userResponse.getUser().getName());
     }
 
     @Test
@@ -28,8 +29,8 @@ public class ChangeUserTest extends BaseTest {
     @Description("Должен вернуться статус код '401', а в теле сообщения 'success:false' и ошибка 'You should be authorised'")
     public void updateNoAuthorizeUserDataTest() {
         Response updateResponse = UpdateDataUserRequest("", new UpdateUserRequest(faker.internet().emailAddress(), faker.name().firstName()));
-        UserErrorResponse errorResponse = userUnauthorizedErrorDeserialization(updateResponse);
-        Assert.assertEquals("Неверный текст ошибки", errorResponse.getMessage(), "You should be authorised");
+        UserErrorResponse errorResponse = updateResponse.then().statusCode(SC_UNAUTHORIZED).assertThat().body("success", equalTo(false)).log().all().and().extract().as(UserErrorResponse.class);
+        Assert.assertEquals("Неверный текст ошибки", "You should be authorised", errorResponse.getMessage());
     }
 
     @Test
@@ -38,7 +39,7 @@ public class ChangeUserTest extends BaseTest {
     public void updateUserEmailTest() {
         String email = faker.internet().emailAddress();
         Response updateResponse = UpdateDataUserRequest(authToken, new UpdateUserRequest(email, data.getName()));
-        UserResponse userResponse = userDeserialization(updateResponse);
+        UserResponse userResponse = updateResponse.then().statusCode(SC_OK).assertThat().body("success", equalTo(true)).log().all().and().extract().as(UserResponse.class);
         Assert.assertEquals("Email не изменился", email, userResponse.getUser().getEmail());
     }
 
@@ -48,7 +49,7 @@ public class ChangeUserTest extends BaseTest {
     public void updateUserNameTest() {
         String name = faker.name().firstName();
         Response updateResponse = UpdateDataUserRequest(authToken, new UpdateUserRequest(data.getEmail(), name));
-        UserResponse userResponse = userDeserialization(updateResponse);
+        UserResponse userResponse = updateResponse.then().statusCode(SC_OK).assertThat().body("success", equalTo(true)).log().all().and().extract().as(UserResponse.class);
         Assert.assertEquals("Имя не изменилось", name, userResponse.getUser().getName());
     }
 
